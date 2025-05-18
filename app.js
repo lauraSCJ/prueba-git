@@ -1,22 +1,12 @@
 const express = require('express');
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = 3000;
 
-// Middleware para parsear JSON (necesario para recibir datos POST)
-app.use(express.json());
-
-// Ruta GET en la raíz
 app.get('/', (req, res) => {
-    res.send('¡API funcionando en Render!');
+  console.log("¡Alguien accedió a la ruta /!"); // Debug
+  res.send('Funciona localmente');
 });
 
-// Ruta POST en la raíz
-app.post('/', (req, res) => {
-    console.log(req.body); // Verifica los datos recibidos
-    res.send('¡POST recibido correctamente!');
-});
-
-// Iniciar servidor (solo UNA vez)
-app.listen(PORT, () => {
-    console.log(`Servidor en http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => { // '0.0.0.0' permite conexiones externas
+  console.log(`Servidor REALMENTE iniciado en http://localhost:${PORT}`);
 });
