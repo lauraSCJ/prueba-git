@@ -1,12 +1,12 @@
-const express = require('express');
+const express = require("express");
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000; // ¡Importante para Render!
 
-app.get('/', (req, res) => {
-  console.log("¡Alguien accedió a la ruta /!"); // Debug
-  res.send('Funciona localmente');
+app.get("/", (req, res) => {
+  console.log("¡Ruta / accedida!");
+  res.send("¡API funcionando en Render y localmente!");
 });
 
-app.listen(PORT, '0.0.0.0', () => { // '0.0.0.0' permite conexiones externas
-  console.log(`Servidor REALMENTE iniciado en http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Servidor en http://localhost:${PORT}`); // Usa backticks ``
 });
