@@ -53,29 +53,33 @@ app.post(RUTA_NUEVO_PACIENTE, async (req, res) => {
     try {
         console.log(`📥 Dato recibido en ${RUTA_NUEVO_PACIENTE}:`, req.body);
 
-        const { nombre, edad } = req.body;
+        const { fecha, hora, ubicacion, dispositivo } = req.body;
 
-        if (!nombre || !edad) {
+        if (!fecha || !hora || !ubicacion || !dispositivo) {
             return res.status(400).json({
                 success: false,
-                message: "Se requieren nombre y edad"
+                message: "Faltan campos obligatorios"
             });
         }
 
         const collection = db.collection(COLLECTION_PACIENTES);
         const result = await collection.insertOne({
-            nombre,
-            edad,
-            fecha: new Date()
+            fecha,
+            hora,
+            ubicacion,
+            dispositivo,
+            recibido: new Date()
         });
 
         res.status(201).json({
             success: true,
-            message: `Paciente agregado exitosamente a la colección ${COLLECTION_PACIENTES}`,
+            message: `Dato agregado exitosamente a la colección ${COLLECTION_PACIENTES}`,
             data: {
                 id: result.insertedId,
-                nombre,
-                edad
+                fecha,
+                hora,
+                ubicacion,
+                dispositivo
             }
         });
 
