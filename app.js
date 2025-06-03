@@ -64,7 +64,7 @@ async function conexionMongoDB() {
 app.post(RUTA_REGISTRAR_NUEVO_PACIENTE, async (req, res) => {
     try {
         // Registra en consola los datos recibidos en esta ruta para depuración.
-        console.log(📥 Solicitud POST recibida en ${RUTA_REGISTRAR_NUEVO_PACIENTE}:, req.body);
+        console.log( Solicitud POST recibida en ${RUTA_REGISTRAR_NUEVO_PACIENTE}:, req.body);
 
         // Desestructura los campos esperados del cuerpo de la solicitud (req.body).
         // Estos nombres deben coincidir con los 'name' o 'id' de tus inputs en el HTML del formulario.
@@ -145,7 +145,7 @@ app.post(RUTA_REGISTRAR_NUEVO_PACIENTE, async (req, res) => {
 // Este endpoint es útil para que tu frontend web pueda mostrar la última ubicación.
 app.get(RUTA_OBTENER_DATOS_EQUIPO, async (req, res) => {
     try {
-        console.log(📥 Solicitud GET recibida en ${RUTA_OBTENER_DATOS_EQUIPO}.);
+        console.log( Solicitud GET recibida en ${RUTA_OBTENER_DATOS_EQUIPO}.);
 
         // Busca el documento más reciente en la colección COLLECTION_DATOS_EQUIPOS.
         // .sort({ fechaRecepcionServidor: -1 }) ordena los documentos de forma descendente por la fecha de recepción.
@@ -162,7 +162,7 @@ app.get(RUTA_OBTENER_DATOS_EQUIPO, async (req, res) => {
         res.json(datoMasReciente[0]);
     } catch (error) {
         // Manejo de errores para la ruta GET.
-        console.error(❌ Error al obtener el dato en GET ${RUTA_OBTENER_DATOS_EQUIPO}:, error);
+        console.error( Error al obtener el dato en GET ${RUTA_OBTENER_DATOS_EQUIPO}:, error);
         res.status(500).json({
             success: false,
             message: 'Error interno del servidor al obtener el dato.',
@@ -176,7 +176,7 @@ app.get(RUTA_OBTENER_DATOS_EQUIPO, async (req, res) => {
 app.post(RUTA_ENVIAR_DATOS_EQUIPO, async (req, res) => {
     try {
         // Muestra en consola el cuerpo completo del JSON recibido del ESP32.
-        console.log(📥 Solicitud POST de equipo recibida en ${RUTA_ENVIAR_DATOS_EQUIPO}:, req.body);
+        console.log( Solicitud POST de equipo recibida en ${RUTA_ENVIAR_DATOS_EQUIPO}:, req.body);
 
         // Desestructura los campos principales del JSON recibido para una validación rápida.
         const { fecha, hora, ubicacion, dispositivo } = req.body;
@@ -208,7 +208,7 @@ app.post(RUTA_ENVIAR_DATOS_EQUIPO, async (req, res) => {
         });
     } catch (error) {
         // Manejo de errores: Registra el error y envía una respuesta de error al cliente.
-        console.error(❌ Error al guardar el dato en POST ${RUTA_ENVIAR_DATOS_EQUIPO}:, error);
+        console.error( Error al guardar el dato en POST ${RUTA_ENVIAR_DATOS_EQUIPO}:, error);
         res.status(500).json({
             success: false,
             message: 'Error interno del servidor al guardar el dato del equipo.',
@@ -223,6 +223,6 @@ app.post(RUTA_ENVIAR_DATOS_EQUIPO, async (req, res) => {
 // Esto asegura que la base de datos esté lista cuando lleguen las peticiones.
 app.listen(PORT, async () => {
     await conexionMongoDB(); // Espera a que la conexión a MongoDB se establezca.
-    console.log(🚀 Servidor listo en http://localhost:${PORT} (ejecutándose localmente));
-    console.log(🌍 URL de la API (si está desplegada en Render): https://mi-api-express.onrender.com);
+    console.log( Servidor listo en http://localhost:${PORT} (ejecutándose localmente));
+    console.log(URL de la API (si está desplegada en Render): https://mi-api-express.onrender.com);
 });
