@@ -1,6 +1,7 @@
 // Librerías
 const express = require('express');
 const { MongoClient } = require('mongodb');
+const bcrypt = require('bcryptjs'); // LÍNEA para hashear contraseñas
 
 // Inicialización de Express
 const app = express();
@@ -18,7 +19,7 @@ let db;
 const NOMBRE_BASE_DE_DATOS_MONGODB = "Alzheimer";
 const COLLECTION_DATOS = "datos"; // Colección para guardar datos de los dispositivos
 const COLLECTION_PACIENTES = "pacientes"; // Colección para guardar información de pacientes
-
+const COLLECTION_USUARIOS = "usuarios"; // <--- DEFINE EL NOMBRE DE TU NUEVA COLECCIÓN
 // Rutas
 const RUTA_ENVIAR = "/enviar";
 const RUTA_RECIBIR = "/recibir";
@@ -56,7 +57,7 @@ app.post(RUTA_ENVIAR, async (req, res) => {
 
         // Validación de campos obligatorios
         const { fecha, hora, ubicacion, dispositivo } = req.body;
-        
+
         if (!fecha || !hora || !ubicacion || !dispositivo) {
             return res.status(400).json({
                 success: false,
@@ -86,9 +87,9 @@ app.post(RUTA_ENVIAR, async (req, res) => {
 
         // Insertar en la base de datos
         const resultado = await db.collection(COLLECTION_DATOS).insertOne(documento);
-        
+
         // Respuesta exitosa
-        res.status(201).json({ 
+        res.status(201).json({
             success: true,
             message: 'Dato guardado correctamente',
             data: {
@@ -100,10 +101,10 @@ app.post(RUTA_ENVIAR, async (req, res) => {
         });
     } catch (error) {
         console.error(`Error en POST ${RUTA_ENVIAR}:`, error);
-        res.status(500).json({ 
+        res.status(500).json({
             success: false,
             error: 'Error al guardar el dato',
-            detalle: error.message 
+            detalle: error.message
         });
     }
 });
@@ -113,9 +114,9 @@ app.get(RUTA_RECIBIR, async (req, res) => {
     try {
         const dato = await db.collection(COLLECTION_DATOS).find().sort({ fecha_registro: -1 }).limit(1).toArray();
         if (dato.length === 0) {
-            return res.status(404).json({ 
+            return res.status(404).json({
                 success: false,
-                message: 'No hay datos disponibles' 
+                message: 'No hay datos disponibles'
             });
         }
         res.json({
@@ -123,10 +124,10 @@ app.get(RUTA_RECIBIR, async (req, res) => {
             data: dato[0]
         });
     } catch (error) {
-        res.status(500).json({ 
+        res.status(500).json({
             success: false,
-            error: 'Error al obtener el dato', 
-            detalle: error.message 
+            error: 'Error al obtener el dato',
+            detalle: error.message
         });
     }
 });
@@ -171,6 +172,61 @@ app.post(RUTA_NUEVO_PACIENTE, async (req, res) => {
         });
     }
 });
+
+
+
+// Endpoint: POST /crear-cuenta
+app.post('/crear-cuenta', async (req, res) => {
+    try {
+        const {
+            nombreCuidador,
+            edadCuidador,
+            ocupacionCuidador,
+            parentezcoCuidador,
+            usuario,
+            contrasena,
+            correo,
+            telefono
+        } = req.body;
+
+        // Validación básica
+        if (!nombreCuidador || !edadCuidador || !ocupacionCuidador || !parentezcoCuidador || !usuario || !contrasena || !correo || !telefono) {
+            return res.status(400).json({
+                message: 'Todos los campos son requeridos.'
+            });
+        }
+
+
+// Validar si exist el uusario 
+
+        const collection = db.collection("usuarios");
+
+        const validateUser = collection.find({"correo": correo});
+
+        if(validateUser){
+            return res.status(400).json({
+                status : "Error",
+                message : "El usuario ya existe"
+            })
+        }
+
+        const result = await collection.insertOne(req.body);
+
+        res.status(201).json({
+            message: 'Cuenta creada exitosamente',
+            usuario: nombreCuidador + " - " + correo
+        });
+
+    } catch (error) {
+        console.error('Error al crear cuenta:', error);
+        res.status(500).json({
+            message: 'Error interno del servidor',
+            error: error.message
+        });
+    }
+});
+
+
 
 // Iniciar servidor
 app.listen(PORT, async () => {
