@@ -245,6 +245,74 @@ app.post('/crear-cuenta', async (req, res) => {
 });
 
 
+// POST /login: Autenticación de usuarios
+app.post('/login', async (req, res) => {
+    try {
+        const { usuario, contrasena } = req.body;
+
+        if (!usuario || !contrasena) {
+            return res.status(400).json({
+                success: false,
+                message: 'Usuario y contraseña son requeridos'
+            });
+        }
+
+        const collection = db.collection("usuarios");
+
+        // Buscar el usuario
+        const user = await collection.findOne({ usuario });
+        if (!user) {
+            return res.status(401).json({
+                success: false,
+                message: 'Usuario no encontrado'
+            });
+        }
+
+        // Comparar contraseñas
+        const passwordMatch = await bcrypt.compare(contrasena, user.contrasena);
+        if (!passwordMatch) {
+            return res.status(401).json({
+                success: false,
+                message: 'Contraseña incorrecta'
+            });
+        }
+
+        // Login exitoso
+        res.status(200).json({
+            success: true,
+            message: 'Inicio de sesión exitoso',
+            data: {
+                id: user._id,
+                nombreCuidador: user.nombreCuidador,
+                usuario: user.usuario,
+                correo: user.correo
+            }
+        });
+
+    } catch (error) {
+        console.error('Error en login:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor',
+            error: error.message
+        });
+    }
+});
+
+//GET PARA LOGIN
+app.get('/usuarios', async (req, res) => {
+  try {
+    const usuarios = await db.collection("usuarios").find({}, { projection: { contrasena: 0 } }).toArray(); // sin contraseñas
+    res.status(200).json({
+      success: true,
+      data: usuarios
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Error al obtener los usuarios', error: err.message });
+  }
+});
+
+
 // Iniciar servidor
 app.listen(PORT, async () => {
     await conexionMongoDB();
