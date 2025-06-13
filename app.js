@@ -181,11 +181,11 @@ app.post(RUTA_USUARIOS, async (req, res) => {
     try {
         console.log(`📥  Dato recibido en ${RUTA_USUARIOS}:`, req.body);
 
-        const {
+        let {
             nombreCuidador,
             edadCuidador,
             ocupacionCuidador,
-            parentezcoCuidador,
+            parentescoCuidador, //  Campo corregido
             usuario,
             contrasena,
             correo,
@@ -194,7 +194,7 @@ app.post(RUTA_USUARIOS, async (req, res) => {
 
         // Validación básica
         if (
-            !nombreCuidador || !edadCuidador || !ocupacionCuidador || !parentezcoCuidador ||
+            !nombreCuidador || !edadCuidador || !ocupacionCuidador || !parentescoCuidador ||
             !usuario || !contrasena || !correo || !telefono
         ) {
             return res.status(400).json({
@@ -203,7 +203,17 @@ app.post(RUTA_USUARIOS, async (req, res) => {
             });
         }
 
-        //  Validación de existencia previa (usuario o correo)
+        // Validación adicional de edad
+        if (isNaN(edadCuidador)) {
+            return res.status(400).json({
+                success: false,
+                message: 'La edad debe ser un número válido.'
+            });
+        }
+
+        // Normalizar el correo
+        correo = correo.trim().toLowerCase();
+
         const collection = db.collection(COLLECTION_USUARIOS);
 
         const usuarioExistente = await collection.findOne({ usuario });
@@ -222,15 +232,17 @@ app.post(RUTA_USUARIOS, async (req, res) => {
             });
         }
 
+        // Hashear contraseña 
+        const hashedPassword = await bcrypt.hash(contrasena, 10);
 
-        // Crear el objeto explícitamente
+        // Crear nuevo usuario
         const nuevoUsuario = {
             nombreCuidador,
-            edadCuidador,
+            edadCuidador: parseInt(edadCuidador),
             ocupacionCuidador,
-            parentezcoCuidador,
+            parentescoCuidador,
             usuario,
-            contrasena, // Recuerda hashear esto en producción
+            contrasena: hashedPassword,
             correo,
             telefono,
             fecha_creacion: new Date()
@@ -250,7 +262,6 @@ app.post(RUTA_USUARIOS, async (req, res) => {
 
     } catch (error) {
         console.error(`Error en POST ${RUTA_USUARIOS}:`, error);
-
         res.status(500).json({
             success: false,
             message: 'Error interno del servidor',
