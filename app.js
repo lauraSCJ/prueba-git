@@ -2,9 +2,12 @@
 const express = require('express');
 const { MongoClient } = require('mongodb');
 const bcrypt = require('bcryptjs'); // LÍNEA para hashear contraseñas
+const cors = require('cors');
 
 // Inicialización de Express
 const app = express();
+
+app.use(cors()); // Habilita CORS
 
 // Middlewares esenciales
 app.use(express.json());
@@ -176,79 +179,51 @@ app.post(RUTA_NUEVO_PACIENTE, async (req, res) => {
 });
 
 
-// Endpoint: POST /crear-cuenta
-app.post(RUTA_USUARIOS, async (req, res) => {
+// Endpoint actualizado (/crear-cuenta)
+app.post('/crear-cuenta', async (req, res) => {
     try {
-        console.log(`📥  Dato recibido en ${RUTA_USUARIOS}:`, req.body);
-
-        let {
+        const {
             nombreCuidador,
             edadCuidador,
             ocupacionCuidador,
-            parentescoCuidador, //  Campo corregido
+            parentescoCuidador, // Corregido nombre
             usuario,
             contrasena,
             correo,
             telefono
         } = req.body;
 
-        // Validación básica
-        if (
-            !nombreCuidador || !edadCuidador || !ocupacionCuidador || !parentescoCuidador ||
-            !usuario || !contrasena || !correo || !telefono
-        ) {
-            return res.status(400).json({
-                success: false,
-                message: 'Todos los campos son requeridos.'
-            });
+        // Validación mejorada
+        if (!nombreCuidador || !edadCuidador || !ocupacionCuidador || 
+            !parentescoCuidador || !usuario || !contrasena || !correo || !telefono) {
+            return res.status(400).json({ success: false, message: 'Todos los campos son requeridos.' });
         }
 
-        // Validación adicional de edad
-        if (isNaN(edadCuidador)) {
-            return res.status(400).json({
-                success: false,
-                message: 'La edad debe ser un número válido.'
-            });
-        }
+        const collection = db.collection("usuarios");
 
-        // Normalizar el correo
-        correo = correo.trim().toLowerCase();
-
-        const collection = db.collection(COLLECTION_USUARIOS);
-
-        const usuarioExistente = await collection.findOne({ usuario });
+        // Verifica usuario/correo existente
+        const usuarioExistente = await collection.findOne({ $or: [{ usuario }, { correo }] });
         if (usuarioExistente) {
-            return res.status(400).json({
-                status: "Error",
-                message: "El usuario ya existe"
+            return res.status(400).json({ 
+                success: false, 
+                message: usuarioExistente.usuario === usuario ? 'El usuario ya existe' : 'El correo ya está registrado' 
             });
         }
 
-        const correoExistente = await collection.findOne({ correo });
-        if (correoExistente) {
-            return res.status(400).json({
-                status: "Error",
-                message: "El correo ya está registrado"
-            });
-        }
-
-        // Hashear contraseña 
+        // Hashear contraseña
         const hashedPassword = await bcrypt.hash(contrasena, 10);
 
-        // Crear nuevo usuario
-        const nuevoUsuario = {
+        const result = await collection.insertOne({
             nombreCuidador,
             edadCuidador: parseInt(edadCuidador),
             ocupacionCuidador,
             parentescoCuidador,
             usuario,
             contrasena: hashedPassword,
-            correo,
+            correo: correo.toLowerCase(),
             telefono,
             fecha_creacion: new Date()
-        };
-
-        const result = await collection.insertOne(nuevoUsuario);
+        });
 
         res.status(201).json({
             success: true,
@@ -261,15 +236,13 @@ app.post(RUTA_USUARIOS, async (req, res) => {
         });
 
     } catch (error) {
-        console.error(`Error en POST ${RUTA_USUARIOS}:`, error);
+        console.error('Error al crear cuenta:', error);
         res.status(500).json({
             success: false,
-            message: 'Error interno del servidor',
-            error: error.message
+            message: 'Error interno del servidor'
         });
     }
 });
-
 
 
 // Iniciar servidor
