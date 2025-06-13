@@ -19,11 +19,13 @@ let db;
 const NOMBRE_BASE_DE_DATOS_MONGODB = "Alzheimer";
 const COLLECTION_DATOS = "datos"; // Colección para guardar datos de los dispositivos
 const COLLECTION_PACIENTES = "pacientes"; // Colección para guardar información de pacientes
-const COLLECTION_USUARIOS = "usuarios"; // <--- DEFINE EL NOMBRE DE TU NUEVA COLECCIÓN
+const COLLECTION_USUARIOS = "usuarios";
+
 // Rutas
 const RUTA_ENVIAR = "/enviar";
 const RUTA_RECIBIR = "/recibir";
 const RUTA_NUEVO_PACIENTE = "/nuevo-paciente";
+const RUTA_USUARIOS = "/crear-cuenta";
 
 // Conexión a MongoDB Atlas
 async function conexionMongoDB() {
@@ -174,10 +176,11 @@ app.post(RUTA_NUEVO_PACIENTE, async (req, res) => {
 });
 
 
-
 // Endpoint: POST /crear-cuenta
-app.post('/crear-cuenta', async (req, res) => {
+app.post(RUTA_USUARIOS, async (req, res) => {
     try {
+        console.log(`📥  Dato recibido en ${RUTA_USUARIOS}:`, req.body);
+
         const {
             nombreCuidador,
             edadCuidador,
@@ -190,36 +193,66 @@ app.post('/crear-cuenta', async (req, res) => {
         } = req.body;
 
         // Validación básica
-        if (!nombreCuidador || !edadCuidador || !ocupacionCuidador || !parentezcoCuidador || !usuario || !contrasena || !correo || !telefono) {
+        if (
+            !nombreCuidador || !edadCuidador || !ocupacionCuidador || !parentezcoCuidador ||
+            !usuario || !contrasena || !correo || !telefono
+        ) {
             return res.status(400).json({
+                success: false,
                 message: 'Todos los campos son requeridos.'
             });
         }
 
+        //  Validación de existencia previa (usuario o correo)
+        const collection = db.collection(COLLECTION_USUARIOS);
 
-// Validar si exist el uusario 
-
-        const collection = db.collection("usuarios");
-
-        const validateUser = collection.find({"correo": correo});
-
-        if(validateUser){
+        const usuarioExistente = await collection.findOne({ usuario });
+        if (usuarioExistente) {
             return res.status(400).json({
-                status : "Error",
-                message : "El usuario ya existe"
-            })
+                status: "Error",
+                message: "El usuario ya existe"
+            });
         }
 
-        const result = await collection.insertOne(req.body);
+        const correoExistente = await collection.findOne({ correo });
+        if (correoExistente) {
+            return res.status(400).json({
+                status: "Error",
+                message: "El correo ya está registrado"
+            });
+        }
+
+
+        // Crear el objeto explícitamente
+        const nuevoUsuario = {
+            nombreCuidador,
+            edadCuidador,
+            ocupacionCuidador,
+            parentezcoCuidador,
+            usuario,
+            contrasena, // Recuerda hashear esto en producción
+            correo,
+            telefono,
+            fecha_creacion: new Date()
+        };
+
+        const result = await collection.insertOne(nuevoUsuario);
 
         res.status(201).json({
+            success: true,
             message: 'Cuenta creada exitosamente',
-            usuario: nombreCuidador + " - " + correo
+            data: {
+                id: result.insertedId,
+                nombreCuidador,
+                correo
+            }
         });
 
     } catch (error) {
-        console.error('Error al crear cuenta:', error);
+        console.error(`Error en POST ${RUTA_USUARIOS}:`, error);
+
         res.status(500).json({
+            success: false,
             message: 'Error interno del servidor',
             error: error.message
         });
