@@ -180,6 +180,7 @@ app.post(RUTA_NUEVO_PACIENTE, async (req, res) => {
 
 
 // Endpoint actualizado (/crear-cuenta)
+
 app.post('/crear-cuenta', async (req, res) => {
     try {
         const {
@@ -245,70 +246,81 @@ app.post('/crear-cuenta', async (req, res) => {
 });
 
 
-// POST /login: Autenticación de usuarios
+// POST LOGIN para iniciar sesión
+
 app.post('/login', async (req, res) => {
-    try {
-        const { usuario, contrasena } = req.body;
-
-        if (!usuario || !contrasena) {
-            return res.status(400).json({
-                success: false,
-                message: 'Usuario y contraseña son requeridos'
-            });
-        }
-
-        const collection = db.collection("usuarios");
-
-        // Buscar el usuario
-        const user = await collection.findOne({ usuario });
-        if (!user) {
-            return res.status(401).json({
-                success: false,
-                message: 'Usuario no encontrado'
-            });
-        }
-
-        // Comparar contraseñas
-        const passwordMatch = await bcrypt.compare(contrasena, user.contrasena);
-        if (!passwordMatch) {
-            return res.status(401).json({
-                success: false,
-                message: 'Contraseña incorrecta'
-            });
-        }
-
-        // Login exitoso
-        res.status(200).json({
-            success: true,
-            message: 'Inicio de sesión exitoso',
-            data: {
-                id: user._id,
-                nombreCuidador: user.nombreCuidador,
-                usuario: user.usuario,
-                correo: user.correo
-            }
-        });
-
-    } catch (error) {
-        console.error('Error en login:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error interno del servidor',
-            error: error.message
-        });
-    }
-});
-
-//GET PARA LOGIN
-app.get('/usuarios', async (req, res) => {
   try {
-    const usuarios = await db.collection("usuarios").find({}, { projection: { contrasena: 0 } }).toArray(); // sin contraseñas
+    const { usuario, contrasena } = req.body;
+
+    if (!usuario || !contrasena) {
+      return res.status(400).json({
+        success: false,
+        message: 'Usuario y contraseña son requeridos'
+      });
+    }
+
+    const collection = db.collection("usuarios");
+
+    // Buscar el usuario por nombre de usuario
+    const user = await collection.findOne({ usuario });
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Usuario no encontrado'
+      });
+    }
+
+    // Comparar contraseñas
+    const passwordMatch = await bcrypt.compare(contrasena, user.contrasena);
+    if (!passwordMatch) {
+      return res.status(401).json({
+        success: false,
+        message: 'Contraseña incorrecta'
+      });
+    }
+
+    // Si llegó aquí, login exitoso
     res.status(200).json({
       success: true,
-      data: usuarios
+      message: 'Inicio de sesión exitoso',
+      data: {
+        id: user._id,
+        nombreCuidador: user.nombreCuidador,
+        usuario: user.usuario,
+        correo: user.correo
+      }
     });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Error al obtener los usuarios', error: err.message });
+
+  } catch (error) {
+    console.error('Error en login:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor',
+      error: error.message
+    });
+  }
+});
+
+// GET LOGIN buscar usuario sin contraseña
+app.get('/usuario/:usuario', async (req, res) => {
+  try {
+    const usuario = req.params.usuario;
+    const user = await db.collection('usuarios').findOne(
+      { usuario },
+      { projection: { contrasena: 0 } }
+    );
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+    }
+
+    res.status(200).json({ success: true, data: user });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error al buscar usuario',
+      error: error.message
+    });
   }
 });
 
