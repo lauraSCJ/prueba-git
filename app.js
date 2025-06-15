@@ -61,14 +61,15 @@ app.post(RUTA_ENVIAR, async (req, res) => {
         console.log(`📥 Dato recibido en ${RUTA_ENVIAR}:`, req.body);
 
         // Validación de campos obligatorios
-        const { fecha, hora, ubicacion, dispositivo } = req.body;
+        // Agrega "usuario" a la destructuración
+const { fecha, hora, ubicacion, dispositivo, usuario } = req.body;
 
-        if (!fecha || !hora || !ubicacion || !dispositivo) {
-            return res.status(400).json({
-                success: false,
-                message: "Faltan campos obligatorios: fecha, hora, ubicacion o dispositivo"
-            });
-        }
+if (!fecha || !hora || !ubicacion || !dispositivo || !usuario) {
+  return res.status(400).json({
+    success: false,
+    message: "Faltan campos obligatorios: fecha, hora, ubicacion, dispositivo o usuario"
+  });
+}
 
         // Validación de estructura de ubicación
         if (!ubicacion.latitud || !ubicacion.longitud) {
@@ -80,15 +81,17 @@ app.post(RUTA_ENVIAR, async (req, res) => {
 
         // Crear documento para MongoDB
         const documento = {
-            fecha_dato: fecha,  // Fecha proporcionada por el dispositivo
-            hora_dato: hora,    // Hora proporcionada por el dispositivo
-            ubicacion: {
-                latitud: ubicacion.latitud,
-                longitud: ubicacion.longitud
-            },
-            dispositivo: dispositivo,
-            fecha_registro: new Date() // Fecha/hora cuando se recibió el dato en el servidor
-        };
+  fecha_dato: fecha,
+  hora_dato: hora,
+  ubicacion: {
+    latitud: ubicacion.latitud,
+    longitud: ubicacion.longitud
+  },
+  dispositivo,
+  usuario, // ✅ GUARDAMOS EL USUARIO
+  fecha_registro: new Date()
+};
+
 
         // Insertar en la base de datos
         const resultado = await db.collection(COLLECTION_DATOS).insertOne(documento);
@@ -327,33 +330,38 @@ app.get('/usuario/:usuario', async (req, res) => {
 
 // GET /datos-ubicacion: Devuelve todos los datos de ubicación de los dispositivos
 app.get('/datos-ubicacion', async (req, res) => {
-    try {
-        const datosUbicacion = await db.collection(COLLECTION_DATOS)
-                                       .find({})
-                                       .project({ ubicacion: 1, dispositivo: 1, fecha_dato: 1, hora_dato: 1 }) // Proyectar solo los campos necesarios
-                                       .sort({ fecha_registro: -1 }) // Opcional: ordenar por los más recientes
-                                       .toArray();
-
-        if (datosUbicacion.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: 'No hay datos de ubicación disponibles'
-            });
-        }
-
-        res.status(200).json({
-            success: true,
-            data: datosUbicacion
-        });
-
-    } catch (error) {
-        console.error('Error al obtener datos de ubicación:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error interno del servidor al obtener datos de ubicación',
-            error: error.message
-        });
+  try {
+    const filtro = {};
+    if (req.query.usuario) {
+      filtro.usuario = req.query.usuario;
     }
+
+    const datosUbicacion = await db.collection(COLLECTION_DATOS)
+      .find(filtro)
+      .project({ ubicacion: 1, dispositivo: 1, fecha_dato: 1, hora_dato: 1, usuario: 1 })
+      .sort({ fecha_registro: -1 })
+      .toArray();
+
+    if (datosUbicacion.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No hay datos de ubicación disponibles'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: datosUbicacion
+    });
+
+  } catch (error) {
+    console.error('Error al obtener datos de ubicación:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor al obtener datos de ubicación',
+      error: error.message
+    });
+  }
 });
 
 // Iniciar servidor
