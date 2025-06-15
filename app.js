@@ -325,6 +325,37 @@ app.get('/usuario/:usuario', async (req, res) => {
 });
 
 
+// GET /datos-ubicacion: Devuelve todos los datos de ubicación de los dispositivos
+app.get('/datos-ubicacion', async (req, res) => {
+    try {
+        const datosUbicacion = await db.collection(COLLECTION_DATOS)
+                                       .find({})
+                                       .project({ ubicacion: 1, dispositivo: 1, fecha_dato: 1, hora_dato: 1 }) // Proyectar solo los campos necesarios
+                                       .sort({ fecha_registro: -1 }) // Opcional: ordenar por los más recientes
+                                       .toArray();
+
+        if (datosUbicacion.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'No hay datos de ubicación disponibles'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: datosUbicacion
+        });
+
+    } catch (error) {
+        console.error('Error al obtener datos de ubicación:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor al obtener datos de ubicación',
+            error: error.message
+        });
+    }
+});
+
 // Iniciar servidor
 app.listen(PORT, async () => {
     await conexionMongoDB();
