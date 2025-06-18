@@ -332,8 +332,10 @@ app.get('/usuario/:usuario', async (req, res) => {
 app.get('/datos-ubicacion', async (req, res) => {
   try {
     const filtro = {};
-    if (req.query.usuario) {
-      filtro.usuario = req.query.usuario;
+
+    // 🔁 CAMBIO: ahora se puede filtrar por dispositivo en vez de usuario
+    if (req.query.dispositivo) {
+      filtro.dispositivo = req.query.dispositivo;
     }
 
     const datosUbicacion = await db.collection(COLLECTION_DATOS)
